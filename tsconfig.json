@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES3",
+    "rootDir": "src",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "lib": [
+      "es6",
+      "dom"
+    ]
+  },
+  "filesGlob": [
+    "*.ts"
+  ],
+  "exclude": [
+    "typings"
+  ]
+}
