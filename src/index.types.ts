@@ -1,16 +1,17 @@
 /** Types generated for queries found in "src/index.ts" */
 
-/** 'SelectStudentFirstnames' parameters type */
-export type ISelectStudentFirstnamesParams = void;
+/** 'SelectNames' parameters type */
+export type ISelectNamesParams = void;
 
-/** 'SelectStudentFirstnames' return type */
-export interface ISelectStudentFirstnamesResult {
-  firstname: string;
+/** 'SelectNames' return type */
+export interface ISelectNamesResult {
+  id: number;
+  name: string;
 }
 
-/** 'SelectStudentFirstnames' query type */
-export interface ISelectStudentFirstnamesQuery {
-  params: ISelectStudentFirstnamesParams;
-  result: ISelectStudentFirstnamesResult;
+/** 'SelectNames' query type */
+export interface ISelectNamesQuery {
+  params: ISelectNamesParams;
+  result: ISelectNamesResult;
 }
 
