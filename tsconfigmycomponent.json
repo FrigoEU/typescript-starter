@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "es6",
     "target": "ES6",
     "rootDir": "src",
     "sourceMap": true,
@@ -8,12 +8,16 @@
     "esModuleInterop": true,
     "jsx": "react",
     "jsxFactory": "h",
+    "moduleResolution": "node",
     "lib": [
       "es6",
       "dom"
     ]
   },
   "include": [
-    "src/**/*"
+    "src/client/mycomponent.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

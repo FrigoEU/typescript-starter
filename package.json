@@ -3,15 +3,19 @@
     "@pgtyped/query": "0.9.0",
     "pg": "8.5.1",
     "typescript": "4.1.2",
-    "fp-ts-routing": "0.5.4"
+    "fp-ts-routing": "0.5.4",
+    "hyperscript": "2.0.2"
   },
   "scripts": {
-    "pgtyped": "pgtyped -c pgtypedconfig.json"
+    "pgtyped": "pgtyped -c pgtypedconfig.json",
+    "run": "tsc && asbundle src/client/mycomponent.js src/client/mycomponent.bundle.js && echo \"Compiled\" && node src/index.js"
   },
   "devDependencies": {
     "@pgtyped/cli": "0.9.0",
     "@types/node": "^14.14.10",
     "@types/pg": "7.14.7",
-    "prettier": "2.2.1"
+    "@types/hyperscript": "0.0.4",
+    "prettier": "2.2.1",
+    "asbundle": "2.7.0"
   }
 }
