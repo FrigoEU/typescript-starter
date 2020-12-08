@@ -106,7 +106,6 @@ http
       return sendStatic(req.url, res);
     }
     res.writeHead(200, { "Content-Type": "text/html" });
-    const s = new Source("from server in source lol");
     const counter = new Source(0);
     const htmlstuff = (
       <html>
@@ -115,12 +114,11 @@ http
           {/* Order of these scripts is very important! */}
           {Source.genServersideHeader()}
           <script src="./client/mycomponent.bundle.js"></script>
-          <script>window.registerOnClient();</script>
         </head>
         <body>
           <div class="bleb">
             Hallokes
-            {active(mybleebers, { content: s })}
+            {active(mybleebers, { content: () => "bleb" })}
             {active(counterbutton, { counter })}
             {active(countershower, { counter })}
             {active(countershower2, { counter })}

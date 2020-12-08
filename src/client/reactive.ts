@@ -1,8 +1,73 @@
 import h from "hyperscript";
 
+function findNonSerializable(obj: any): any | null {
+  function isPlain(val: any) {
+    return (
+      typeof val === "undefined" ||
+      typeof val === "string" ||
+      typeof val === "boolean" ||
+      typeof val === "number" ||
+      Array.isArray(val) ||
+      (val.constructor === Object && // don't allow classes or functions
+        val.toString() === "[object Object]")
+    );
+  }
+  if (!isPlain(obj)) {
+    return obj;
+  }
+  // Special casing ServersideSource: We CAN serialize this from server to client,
+  //   as long as the value itself is serializable (ie. not a function or class)
+  if (obj.constructor && obj.constructor.name === "ServersideSource") {
+    const nonSerializableVal = findNonSerializable(obj.value);
+    if (nonSerializableVal) {
+      return nonSerializableVal;
+    } else {
+      return null;
+    }
+  }
+  for (var property in obj) {
+    if (obj.hasOwnProperty(property)) {
+      if (!isPlain(obj[property])) {
+        return obj[property];
+      }
+      if (typeof obj[property] == "object") {
+        const nonSerializableNested = findNonSerializable(obj[property]);
+        if (nonSerializableNested) {
+          return nonSerializableNested;
+        }
+      }
+    }
+  }
+}
+
+function printFunction(f: Function): string {
+  return `
+Function name: ${f.name}
+Function body: ${f.toString()}.
+
+Wrap this in another component so function definition happens on client side.
+`;
+}
+
 export function active<Props>(c: Component<Props>, p: Props): HTMLElement {
   if (typeof window === "undefined") {
     // serverside: stringify into template
+    if (process.env.NODE_ENV === "production") {
+    } else {
+      // in development: make sure everything is serializable
+      const nonSerializable: any = findNonSerializable(p);
+      if (nonSerializable) {
+        throw new Error(
+          `During serialization of properties for component ${c.name}.
+Can't serialize on serverside:
+${
+  typeof nonSerializable === "function"
+    ? printFunction(nonSerializable)
+    : JSON.stringify(nonSerializable)
+}`
+        );
+      }
+    }
     return h(c.name, {}, h("template", {}, JSON.stringify(p)));
   } else {
     // clientside: pass as prop on custom element
@@ -147,9 +212,7 @@ function findSourcesFromServer(_: any, x: any) {
   return x;
 }
 
-export function registerOnClientGeneric<ConstProps>(
-  c: Component<ConstProps>
-): void {
+function registerOnClient<ConstProps>(c: Component<ConstProps>): void {
   customElements.define(
     c.name,
     class extends HTMLElement {
@@ -195,10 +258,20 @@ export type Immutable<T> = T extends
   ? ReadonlySet<Immutable<S>>
   : { readonly [P in keyof T]: Immutable<T[P]> };
 
-export type Component<ConstProps> = {
+export type Component<Props> = {
   name: string;
-  run: (p: Immutable<ConstProps>) => HTMLElement;
+  run: (p: Immutable<Props>) => HTMLElement;
 };
+export function component<Props>(
+  name: string,
+  run: (p: Immutable<Props>) => HTMLElement
+): Component<Props> {
+  const comp = { name, run };
+  if (typeof window !== "undefined") {
+    registerOnClient(comp);
+  }
+  return comp;
+}
 
 // TODO check for memory leaks?
 export function dyn<T>(

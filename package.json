@@ -8,7 +8,8 @@
   },
   "scripts": {
     "pgtyped": "pgtyped -c pgtypedconfig.json",
-    "run": "tsc && asbundle src/client/mycomponent.js src/client/mycomponent.bundle.js && echo \"Compiled\" && node src/index.js"
+    "run": "tsc && asbundle src/client/mycomponent.js src/client/mycomponent.bundle.js && echo \"Compiled\" && node src/index.js",
+    "run-debug-server": "tsc && asbundle src/client/mycomponent.js src/client/mycomponent.bundle.js && echo \"Compiled\" && node --inspect src/index.js"
   },
   "devDependencies": {
     "@pgtyped/cli": "0.9.0",
