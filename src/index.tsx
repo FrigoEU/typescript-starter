@@ -1,8 +1,7 @@
 import { sql } from "@pgtyped/query";
 import { Client } from "pg";
 import { ISelectNamesQuery } from "./index.types";
-import * as routing from "fp-ts-routing";
-import * as assert from "assert";
+import * as routing from "./routing";
 import * as fs from "fs";
 import * as http from "http";
 import h from "hyperscript";
@@ -16,47 +15,73 @@ import {
 } from "./client/mycomponent";
 
 // ROUTING
-interface Home {
-  _tag: "Home";
-}
-const defaults = routing.end;
-const homeMatch = routing.lit("home").then(routing.end);
 
-interface Resident {
-  _tag: "Resident";
-  residentId: number;
-}
-const residentMatch = routing
-  .lit("resident")
-  .then(routing.int("residentId"))
-  .then(routing.end);
-
-type Route = Home | Resident;
-const pageRouter = routing
-  .zero<Route>()
-  .alt(defaults.parser.map(() => ({ _tag: "Home" })))
-  .alt(homeMatch.parser.map(() => ({ _tag: "Home" })))
-  .alt(residentMatch.parser.map((args) => ({ _tag: "Resident", ...args })));
-
-// const apiRouter =
-//   TODO: should probably make another type with a phantom type of the return type
-
-function routingTests() {
-  const parseRoute = (s: string): Route | null =>
-    routing.parse(pageRouter, routing.Route.parse(s), null);
-
-  assert.deepStrictEqual(parseRoute("/resident/5"), {
-    _tag: "Resident",
-    residentId: 5,
+let allRoutes: {
+  route: routing.RouteWithReturnType<any, any>;
+  run: (res: http.ServerResponse, p: any) => void;
+}[] = [];
+function implementPageRoute<Params>(
+  route: routing.RouteWithReturnType<Params, HTMLElement>,
+  run: (p: Params) => HTMLElement
+): void {
+  allRoutes.push({
+    route,
+    run: function (res: http.ServerResponse, p: Params) {
+      const r = run(p);
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.write(r.outerHTML);
+      res.end();
+    },
   });
-  assert.deepStrictEqual(parseRoute("/resident/bleb"), null);
-  assert.deepStrictEqual(
-    routing.format(residentMatch.formatter, { residentId: 6 }),
-    "/resident/6"
-  );
+}
+function implementApiRoute<Params, ReturnType>(
+  route: routing.RouteWithReturnType<Params, ReturnType>,
+  run: (p: Params) => ReturnType
+): void {
+  allRoutes.push({
+    route,
+    run: function (res: http.ServerResponse, p: Params) {
+      const r = run(p);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.write(JSON.stringify(r));
+      res.end();
+    },
+  });
 }
 
-routingTests();
+const homeRoute = routing.defineRoute("/home").returns<HTMLElement>();
+
+const residentRoute = routing
+  .defineRoute("/site/{siteName:string}/resident/{residentId:number}")
+  .returns<HTMLElement>();
+
+const myApiRoute = routing
+  .defineRoute("/myapi/{someId:number}")
+  .returns<number>();
+
+implementPageRoute(homeRoute, () => <div>You're home!</div>);
+implementPageRoute(residentRoute, (r) => (
+  <div>
+    You're at resident number {r.residentId.toExponential()} in site
+    {r.siteName}
+  </div>
+));
+implementApiRoute(myApiRoute, (r) => r.someId);
+
+http
+  .createServer(function (req, res) {
+    for (let route of allRoutes) {
+      const parsed = route.route.parse(req.url || "");
+      if (parsed.constructor === Error) {
+        console.log(parsed.message);
+      } else {
+        route.run(res, parsed);
+      }
+    }
+    res.writeHead(404);
+    res.end();
+  })
+  .listen(8081);
 
 // DATABASE
 const dbConfig = {
@@ -118,7 +143,7 @@ http
         <body>
           <div class="bleb">
             Hallokes
-            {active(mybleebers, { content: () => "bleb" })}
+            {active(mybleebers, { content: "bleb" })}
             {active(counterbutton, { counter })}
             {active(countershower, { counter })}
             {active(countershower2, { counter })}

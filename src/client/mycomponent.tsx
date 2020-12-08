@@ -50,12 +50,12 @@ export const myfleeflers: Component<{ something: string }> = component(
   }
 );
 
-export const mybleebers: Component<{ content: () => string }> = component(
+export const mybleebers: Component<{ content: string }> = component(
   "my-bleebers",
   function (c) {
     return (
       <div>
-        bleebers: {c.content()}
+        bleebers: {c.content}
         {active(myfleeflers, { something: "wack" })}
       </div>
     );
