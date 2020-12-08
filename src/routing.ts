@@ -1,4 +1,5 @@
 // TODO: maybe keeping these errors is a waste on production?
+// TODO: support new types more freely? for newtypes mostly
 
 interface TypeMapping {
   string: string;
@@ -189,12 +190,26 @@ export function makeRoute<T extends string>(
   }
 }
 
-export interface RouteWithReturnType<Params, _ReturnType>
-  extends Route<Params> {}
-export function defineRoute<S extends string>(
-  s: S
-): { returns: <T>() => RouteWithReturnType<ExtractRouteParams<S>, T> } {
+export interface AppRoute<Params, _BodyType, _ReturnType>
+  extends Route<Params> {
+  verb: "GET" | "POST";
+}
+export function defineRoute<S extends string>(s: S) {
+  // : { returns: <T>() => AppRoute<ExtractRouteParams<S>, T> }
   return {
-    returns: () => makeRoute(s),
+    isGet: function () {
+      return {
+        returns: function <T>(): AppRoute<ExtractRouteParams<S>, void, T> {
+          return { verb: "GET", ...makeRoute(s) };
+        },
+      };
+    },
+    isPost: function <Body>() {
+      return {
+        returns: function <T>(): AppRoute<ExtractRouteParams<S>, Body, T> {
+          return { verb: "POST", ...makeRoute(s) };
+        },
+      };
+    },
   };
 }

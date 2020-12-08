@@ -16,17 +16,18 @@ import {
 
 // ROUTING
 
+// TODO convert to async functions (?)
 let allRoutes: {
-  route: routing.RouteWithReturnType<any, any>;
-  run: (res: http.ServerResponse, p: any) => void;
+  route: routing.AppRoute<any, any, any>;
+  run: (req: http.IncomingMessage, res: http.ServerResponse, p: any) => void;
 }[] = [];
 function implementPageRoute<Params>(
-  route: routing.RouteWithReturnType<Params, HTMLElement>,
+  route: routing.AppRoute<Params, void, HTMLElement>,
   run: (p: Params) => HTMLElement
 ): void {
   allRoutes.push({
     route,
-    run: function (res: http.ServerResponse, p: Params) {
+    run: function (_, res: http.ServerResponse, p: Params) {
       const r = run(p);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(r.outerHTML);
@@ -34,29 +35,39 @@ function implementPageRoute<Params>(
     },
   });
 }
-function implementApiRoute<Params, ReturnType>(
-  route: routing.RouteWithReturnType<Params, ReturnType>,
-  run: (p: Params) => ReturnType
+function implementApiRoute<Params, Body, Return>(
+  route: routing.AppRoute<Params, Body, Return>,
+  run: (p: Params, b: Body) => Return
 ): void {
   allRoutes.push({
     route,
-    run: function (res: http.ServerResponse, p: Params) {
-      const r = run(p);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.write(JSON.stringify(r));
-      res.end();
+    run: function (
+      req: http.IncomingMessage,
+      res: http.ServerResponse,
+      p: Params
+    ) {
+      let data = "";
+      req.on("data", (chunk) => {
+        data += chunk;
+      });
+      req.on("end", () => {
+        const r = run(p, JSON.parse(data));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.write(JSON.stringify(r));
+        res.end();
+      });
     },
   });
 }
 
-const homeRoute = routing.defineRoute("/home").returns<HTMLElement>();
-
+const homeRoute = routing.defineRoute("/home").isGet().returns<HTMLElement>();
 const residentRoute = routing
   .defineRoute("/site/{siteName:string}/resident/{residentId:number}")
+  .isGet()
   .returns<HTMLElement>();
-
 const myApiRoute = routing
   .defineRoute("/myapi/{someId:number}")
+  .isPost<string>()
   .returns<number>();
 
 implementPageRoute(homeRoute, () => <div>You're home!</div>);
@@ -75,7 +86,7 @@ http
       if (parsed.constructor === Error) {
         console.log(parsed.message);
       } else {
-        route.run(res, parsed);
+        route.run(req, res, parsed);
       }
     }
     res.writeHead(404);
@@ -110,7 +121,7 @@ async function dbStuff() {
 
 dbStuff();
 
-// Webserver stuff
+// UI stuff
 
 function sendStatic(url: string, res: http.ServerResponse) {
   fs.readFile(__dirname + url, function (err, data) {
@@ -144,6 +155,7 @@ http
           <div class="bleb">
             Hallokes
             {active(mybleebers, { content: "bleb" })}
+            {active(myfleeflers, { something: "flee" })}
             {active(counterbutton, { counter })}
             {active(countershower, { counter })}
             {active(countershower2, { counter })}
@@ -151,7 +163,7 @@ http
         </body>
       </html>
     );
-    res.write(htmlstuff.outerHTML); //write a response to the client
-    res.end(); //end the response
+    res.write(htmlstuff.outerHTML);
+    res.end();
   })
-  .listen(8080); //the server object listens on port 8080
+  .listen(8080);
