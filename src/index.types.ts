@@ -1,4 +1,4 @@
-/** Types generated for queries found in "src/index.ts" */
+/** Types generated for queries found in "src/index.tsx" */
 
 /** 'SelectNames' parameters type */
 export type ISelectNamesParams = void;
@@ -11,7 +11,8 @@ export interface ISelectNamesResult {
 
 /** 'SelectNames' query type */
 export interface ISelectNamesQuery {
-  params: ISelectNamesParams;
-  result: ISelectNamesResult;
+  params: {};
+  result: {  id: number;
+  name: string;};
 }
 

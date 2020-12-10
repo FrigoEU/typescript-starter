@@ -100,6 +100,13 @@ const dbConfig = {
   database: "urwebschool",
 };
 
+interface Flavoring<FlavorT> {
+  _type?: FlavorT;
+}
+export type Flavor<T, FlavorT> = T & Flavoring<FlavorT>;
+type UserId = Flavor<number, "UserId">;
+type ResidentId = Flavor<number, "ResidentId">;
+
 export const selectNames = sql<ISelectNamesQuery>`
 select users.id, names.name
 from users
@@ -110,9 +117,14 @@ async function dbStuff() {
   const client = new Client(dbConfig);
 
   await client.connect();
-  const students = await selectNames.run(({} as unknown) as void, client);
-  students.forEach(function (stu) {
+  const students = await selectNames.run({}, client);
+  function printResidentId(id: ResidentId) {
+    console.log(id);
+  }
+  students.forEach(function (stu: { id: UserId; name: string }) {
     console.log(stu.id);
+    // @ts-expect-error
+    printResidentId(stu.id);
     if (stu.name === null) {
       console.log("is null");
     }
@@ -152,6 +164,9 @@ http
           <script src="./client/mycomponent.bundle.js"></script>
         </head>
         <body>
+          <div>
+            <div>bl</div>
+          </div>
           <div class="bleb">
             Hallokes
             {active(mybleebers, { content: "bleb" })}
@@ -159,6 +174,7 @@ http
             {active(counterbutton, { counter })}
             {active(countershower, { counter })}
             {active(countershower2, { counter })}
+            {[1, 2, ["blke", "ebl", active(countershower2, { counter })]]}
           </div>
         </body>
       </html>

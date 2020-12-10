@@ -12,9 +12,6 @@ function findNonSerializable(obj: any): any | null {
         val.toString() === "[object Object]")
     );
   }
-  if (!isPlain(obj)) {
-    return obj;
-  }
   // Special casing ServersideSource: We CAN serialize this from server to client,
   //   as long as the value itself is serializable (ie. not a function or class)
   if (obj.constructor && obj.constructor.name === "ServersideSource") {
@@ -25,12 +22,12 @@ function findNonSerializable(obj: any): any | null {
       return null;
     }
   }
-  for (var property in obj) {
-    if (obj.hasOwnProperty(property)) {
-      if (!isPlain(obj[property])) {
-        return obj[property];
-      }
-      if (typeof obj[property] == "object") {
+  if (!isPlain(obj)) {
+    return obj;
+  }
+  if (Array.isArray(obj) || typeof obj === "object") {
+    for (var property in obj) {
+      if (obj.hasOwnProperty(property)) {
         const nonSerializableNested = findNonSerializable(obj[property]);
         if (nonSerializableNested) {
           return nonSerializableNested;
