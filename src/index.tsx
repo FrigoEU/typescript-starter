@@ -79,7 +79,7 @@ implementPageRoute(residentRoute, (r) => (
 ));
 implementApiRoute(myApiRoute, (r) => r.someId);
 
-http
+const server = http
   .createServer(function (req, res) {
     for (let route of allRoutes) {
       const parsed = route.route.parse(req.url || "");
@@ -147,7 +147,7 @@ function sendStatic(url: string, res: http.ServerResponse) {
   });
 }
 
-http
+const server2 = http
   .createServer(function (req, res) {
     const { Source } = initServersideSources();
     if (req.url === "/client/mycomponent.bundle.js") {

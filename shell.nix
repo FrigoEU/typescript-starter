@@ -13,7 +13,4 @@ pkgs.stdenv.mkDerivation rec {
   buildInputs = [
     pkgs.nodejs-14_x
   ];
-  shellHook =
-    ''
-    '';
 }
