@@ -1,4 +1,5 @@
 {
+  "main": "index.tsx",
   "dependencies": {
     "@pgtyped/query": "0.9.0",
     "pg": "8.5.1",
@@ -7,14 +8,16 @@
   },
   "scripts": {
     "pgtyped": "pgtyped -c pgtypedconfig.json",
-    "run": "tsc && asbundle src/client/mycomponent.js src/client/mycomponent.bundle.js && echo \"Compiled\" && node src/index.js",
-    "run-debug-server": "tsc && asbundle src/client/mycomponent.js src/client/mycomponent.bundle.js && echo \"Compiled\" && node --inspect src/index.js"
+    "check": "tsc -p . --noEmit",
+    "build": "node esbuild.js",
+    "start": "npm run build && node --enable-source-maps ./out/server/index.js ",
+    "run-debug-server": "npm run build && node --inspect --enable-source-maps ./out/server/index.js "
   },
   "devDependencies": {
     "@pgtyped/cli": "0.9.0",
     "@types/node": "^14.14.10",
     "@types/pg": "7.14.7",
     "prettier": "2.2.1",
-    "asbundle": "2.7.0"
+    "esbuild": "0.8.34"
   }
 }

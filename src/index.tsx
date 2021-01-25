@@ -1,11 +1,9 @@
 import { sql } from "@pgtyped/query";
-import { Client } from "pg";
-import { ISelectNamesQuery } from "./index.types";
-import * as routing from "./routing";
 import * as fs from "fs";
 import * as http from "http";
+import * as path from "path";
 import h from "hyperscript";
-import { active, initServersideSources } from "./client/reactive";
+import { Client } from "pg";
 import {
   counterbutton,
   countershower,
@@ -13,9 +11,13 @@ import {
   mybleebers,
   myfleeflers,
 } from "./client/mycomponent";
+import { ISelectNamesQuery } from "./index.types";
+import { active, initServersideSources, Source, dyn } from "./lib/reactive";
+import * as routing from "./lib/routing";
 
 // ROUTING
 
+// First: "lib" code:
 // TODO convert to async functions (?)
 let allRoutes: {
   route: routing.AppRoute<any, any, any>;
@@ -23,14 +25,28 @@ let allRoutes: {
 }[] = [];
 function implementPageRoute<Params>(
   route: routing.AppRoute<Params, void, HTMLElement>,
-  run: (p: Params) => HTMLElement
+  script: string,
+  run: (p: Params, makeSource: <T>(a: T) => Source<T>) => HTMLElement
 ): void {
   allRoutes.push({
     route,
     run: function (_, res: http.ServerResponse, p: Params) {
-      const r = run(p);
+      const { Source, mkSource } = initServersideSources();
+      const r = run(p, mkSource);
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.write(r.outerHTML);
+      const htm = (
+        <html>
+          <meta charset="UTF-8" />
+          <head>
+            {Source.genServersideHeader()}
+
+            {/* TODO! Can we derive this somehow? */}
+            <script src={script}></script>
+          </head>
+          <body>{r}</body>
+        </html>
+      );
+      res.write(htm.outerHTML);
       res.end();
     },
   });
@@ -60,6 +76,49 @@ function implementApiRoute<Params, Body, Return>(
   });
 }
 
+const mime = {
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "text/javascript",
+};
+type mimes = keyof typeof mime;
+
+function makeServer(routes: typeof allRoutes) {
+  return http.createServer(function (req, res) {
+    allRoutes.forEach(function (route) {
+      const parsed = route.route.parse(req.url || "");
+      if (parsed.constructor === Error) {
+        console.log(parsed.message);
+      } else {
+        route.run(req, res, parsed);
+      }
+    });
+
+    const u = path.resolve(path.join("./" + req.url) || "./index.html");
+    console.log("Trying to find file: " + u);
+    if (fs.existsSync(u)) {
+      const stream = fs.createReadStream(u);
+      stream.on("ready", () => {
+        const type =
+          mime[path.parse(u).ext as mimes] || "application/octet-stream";
+        console.log(`${req.method} ${req.url} => 200 ${type}`);
+        res.writeHead(200, { "content-type": type });
+        stream.pipe(res);
+      });
+      stream.on("error", (err) => {
+        console.log(`${req.method} ${req.url} => 500 ${u} ${err.name}`);
+        res.writeHead(500, err.name);
+        res.end(JSON.stringify(err));
+      });
+      return;
+    }
+
+    res.writeHead(404);
+    res.end();
+  });
+}
+
+//Actual implementation of routes
 const homeRoute = routing.defineRoute("/home").isGet().returns<HTMLElement>();
 const residentRoute = routing
   .defineRoute("/site/{siteName:string}/resident/{residentId:number}")
@@ -70,29 +129,25 @@ const myApiRoute = routing
   .isPost<string>()
   .returns<number>();
 
-implementPageRoute(homeRoute, () => <div>You're home!</div>);
-implementPageRoute(residentRoute, (r) => (
-  <div>
-    You're at resident number {r.residentId.toExponential()} in site
-    {r.siteName}
-  </div>
-));
+implementPageRoute(homeRoute, "", () => <div>You're home!</div>);
+implementPageRoute(
+  residentRoute,
+  "/out/browser/mycomponent.js", // TODO: not very nice, see other comments about client code bundling / loading
+  (r, mkSource) => {
+    const counter = mkSource(0);
+    return (
+      <div>
+        You're at resident number {r.residentId.toExponential()} in site
+        {r.siteName}. <br />
+        {active(counterbutton, { counter })}
+        {active(countershower, { counter })}
+      </div>
+    );
+  }
+);
 implementApiRoute(myApiRoute, (r) => r.someId);
 
-const server = http
-  .createServer(function (req, res) {
-    for (let route of allRoutes) {
-      const parsed = route.route.parse(req.url || "");
-      if (parsed.constructor === Error) {
-        console.log(parsed.message);
-      } else {
-        route.run(req, res, parsed);
-      }
-    }
-    res.writeHead(404);
-    res.end();
-  })
-  .listen(8081);
+makeServer(allRoutes).listen(8081);
 
 // DATABASE
 const dbConfig = {
@@ -131,7 +186,7 @@ async function dbStuff() {
   });
 }
 
-dbStuff();
+/* dbStuff(); */
 
 // UI stuff
 
