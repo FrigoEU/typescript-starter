@@ -6,13 +6,13 @@ export type ISelectNamesParams = void;
 /** 'SelectNames' return type */
 export interface ISelectNamesResult {
   id: number;
-  name: string;
+  bar__id: number;
+  value: number | null;
 }
 
 /** 'SelectNames' query type */
 export interface ISelectNamesQuery {
-  params: {};
-  result: {  id: number;
-  name: string;};
+  params: ISelectNamesParams;
+  result: ISelectNamesResult;
 }
 

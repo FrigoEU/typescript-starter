@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as http from "http";
 import * as path from "path";
 import h from "hyperscript";
-import { Client } from "pg";
+import * as pg from "pg";
 import {
   counterbutton,
   countershower,
@@ -152,7 +152,7 @@ makeServer(allRoutes).listen(8081);
 // DATABASE
 const dbConfig = {
   host: "localhost",
-  database: "urwebschool",
+  database: "tstest",
 };
 
 interface Flavoring<FlavorT> {
@@ -163,24 +163,28 @@ type UserId = Flavor<number, "UserId">;
 type ResidentId = Flavor<number, "ResidentId">;
 
 export const selectNames = sql<ISelectNamesQuery>`
-select users.id, names.name
-from users
-join names on names.userid = users.id
+select foo.id, bar.id as bar__id, bar.value
+from foo
+left outer join bar on bar.foo_id = foo.id
 `;
 
 async function dbStuff() {
-  const client = new Client(dbConfig);
+  const client = new pg.Client(dbConfig);
 
   await client.connect();
-  const students = await selectNames.run({}, client);
+  const students = await selectNames.run(({} as unknown) as void, client);
   function printResidentId(id: ResidentId) {
     console.log(id);
   }
-  students.forEach(function (stu: { id: UserId; name: string }) {
+  students.forEach(function (stu: {
+    id: UserId;
+    bar__id: number | null;
+    value: number | null;
+  }) {
     console.log(stu.id);
     // @ts-expect-error
     printResidentId(stu.id);
-    if (stu.name === null) {
+    if (stu.value === null) {
       console.log("is null");
     }
   });
