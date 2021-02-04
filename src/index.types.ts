@@ -7,7 +7,7 @@ export type ISelectNamesParams = void;
 export interface ISelectNamesResult {
   id: number;
   bar__id: number;
-  value: number | null;
+  value: number;
 }
 
 /** 'SelectNames' query type */

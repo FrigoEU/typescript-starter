@@ -1,3 +1,8 @@
+// Beperkingen:
+// * pgtyped zegt niet dat tabellen die via een outer join binnenkomen nullable kunnen zijn. Postgresql zelf houdt dat gewoon niet bij. Enige andere oplossing is om een andere manier van SQL type checking te doen, bvb zoals Mammoth (maar dat heeft zelf ook heel wat problemen zoals fields selecteren uit tabellen die niet in je query zitten) of hssqlppp (goeie start, maar de typechecking is niet goed genoeg). Als we echt veel goesting hebben kunnen we nog wel eens kijken hoe urweb sql juist encodeert in types, om dan zo misschien rond hssqlppp-opvolger simple-sql-parser te bouwen.
+// * <dyn> mag niet in server-side code. functies kan je niet zomaar deserializen in html. Twee dingen nodig: "bundling" en variabelen (closures) capturen. Erg moeilijk. Hoogstwaarschijnlijk beter om het gewoon simpel te houden en gewoon client-side componenten renderen op server. We kunnen misschien wel een paar generieken componenten maken zoals show-source, if-source, ...
+// * Zou missichien goed zijn om "child-html" te kunnen meegeven aan componenten. Zou niet zo moeilijk moeten zijn. Enkel oppassen voor die templates die we bijsteken als we componenten server-side renderen. Te bouwen als/wanneer we dat nodig hebben.
+
 import { sql } from "@pgtyped/query";
 import * as fs from "fs";
 import * as http from "http";
